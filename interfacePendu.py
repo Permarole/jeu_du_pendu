@@ -18,26 +18,29 @@ class Interface(Frame) :
 		self.win = False # initialisation conditions début de partie
 		self.nb_vie = donnees.nb_essai 
 
-		Frame.__init__(self, fenetre, width=960, height = 540,**kwargs)
+		Frame.__init__(self, fenetre, width=1350, height = 600,**kwargs)
 		self.pack(fill=BOTH)
 
 		self.titre = Label(self, text = "LE\nPENDU")
 		self.titre.pack(pady = 25)
 
 
-		self.bouton_play = Button(self, text = "JOUER", fg = 'green')
+		self.bouton_play = Button(self, text = "JOUER", fg = 'green', command = self.set_mot)
 		self.bouton_play.pack(side = "top",pady = 10) # Bouton jouer
 
-		self.bouton_score = Button(self, text = "Scores", command = lambda : print('score joueur')) # reste a definir la fonction
-		self.bouton_score.pack(side = "top",pady = 10) # Bouton pour accerder au scores
+		self.bouton_scores = Button(self, text = "Scores", command = self.afficher_scores) # reste a definir la fonction
+		self.bouton_scores.pack(side = "top",pady = 10) # Bouton pour accerder au scores
 
-		self.bouton_regles = Button(self, text = "Règles") # reste a definir la fonction
+		self.fenetre_scores = Frame(fenetre, width =  650, height = 350)
+
+		self.bouton_regles = Button(self, text = "Règles", command = self.afficher_regles) # reste a definir la fonction
 		self.bouton_regles.pack(side = "left",padx = 10) # Bouton pour accerder au scores
 
-		self.fenetre_regles = Frame(fenetre, width = 1000, height = 1000)
+		self.fenetre_regles = Frame(fenetre, width = 650, height = 350)
 		self.regles = Label(self.fenetre_regles, text = donnees.regles )
 		
-		self.bouton_revenir = Button(self.fenetre_regles, text= "Revenir au jeu", command = self.afficher_jeu)
+		self.bouton_revenir_regles = Button(self.fenetre_regles, text= "Revenir au jeu", command = self.afficher_jeu)
+		self.bouton_revenir_scores = Button(self.fenetre_scores, text= "Revenir au jeu", command = self.afficher_jeu)
 
 		self.bouton_rejouer = Button(self, text = "Rejouer", command = self.set_mot)
 
@@ -154,40 +157,48 @@ class Interface(Frame) :
 	def victoire(self) :
 		self.frame_jeu.pack_forget()
 		self.label_victoire.pack(pady = 10)
-		self.bouton_score.pack(side='top',pady = 10)
+		self.bouton_scores.pack(side='top',pady = 10)
 		self.bouton_rejouer.pack(side='top',pady = 10)
 
 	def defaite(self):
 		self.frame_jeu.pack_forget()
 		self.label_defaite.pack()
 
-	def afficherRegles(self):
+	def afficher_regles(self):
 		"""Génére la frame des regles du pendu"""
 
-		self.changement_frame()
+		self.changement_frame() # nettoyage de la frame
 		self.fenetre_regles.pack(side = "top")
 		self.titre["text"] = "LES REGLES"
 		self.regles.pack(side = "top")
 		
-		self.bouton_revenir.pack(side = 'top')
+		self.bouton_revenir_regles.pack(side = 'top')
 
+	def afficher_scores(self):
+		"""Génére la frame des scores"""
 
+		fonctions.creer_scores() # on verifie l'existance du ficier score et on le creer s'il n'existe pas
+		self.changement_frame() # nettoyage de la frame
+		self.fenetre_scores.pack(side = "top")
+		self.titre["text"] = "LES SCORES"
+		dico_scores = fonctions.get_dico_scores()
+		if not dico_scores : # on verifie si le dictionnaire est vide dict vide évaluer à False en python 
+			joueur_none = Label(self.fenetre_scores, text = "Aucun joueur enregistrer")
+			joueur_none.pack(side = "top", pady = 50)
+		else :
+			for score_joueur in dico_scores.keys() : # creation d'un label par joueur 
+				score_joueur = Label(self.fenetre_scores, text = score_joueur.afficher_joueur())
+				score_joueur.pack(side = "top", pady = 15)
 
-	# def afficherScores(self):
-	# 	"""Génére la frame des scores du pendu"""
-	# 	self.changement_frame()
-	# 	self.fenetre_regles.pack(side = "top")
-	# 	self.titre_regles.pack(side = "top")
-	# 	self.regles.pack(side = "top")
-		
-	# 	self.bouton_revenir.pack(side = 'top')
+		self.bouton_revenir_scores.pack(side = 'top') # bouton permettant de revenir a l'écran titre
+
 
 	def changement_frame(self,quitter = True):
 		""""Cette fonction 'nettoie' la frame pour un nouvel affichage """
 
 		self.bouton_play.pack_forget()
 		self.bouton_regles.pack_forget()
-		self.bouton_score.pack_forget()
+		self.bouton_scores.pack_forget()
 		if quitter :
 			self.bouton_quitter.pack_forget()
 		else :
@@ -205,12 +216,13 @@ class Interface(Frame) :
 		# if int == 1 :
 			
 		self.fenetre_regles.pack_forget()
+		self.fenetre_scores.pack_forget()
 
 		# elif int == 0 :
 
 		# 	self.fenetre_scors.pack_forget()
 		self.bouton_play.pack(side='top',pady = 10)
-		self.bouton_score.pack(side='top',pady = 10)
+		self.bouton_scores.pack(side='top',pady = 10)
 		self.bouton_regles.pack(side='left',pady = 10)	
 		self.bouton_quitter.pack(side = "right",pady = 10)
 
