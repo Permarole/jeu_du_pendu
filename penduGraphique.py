@@ -9,9 +9,12 @@ import joueur
 
 def main():
 	"""Fonction creant la fenetre de base avec les commandes jouer regles score et quitter """
+	fonctions.creer_scores()
 	fenetre = Tk() 
 	fenetre.minsize(650,350)
 	mainInterface = interfacePendu.Interface(fenetre)
+
+
 
 
 	mainInterface.mainloop()

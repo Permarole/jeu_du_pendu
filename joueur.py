@@ -1,11 +1,11 @@
 #-*-coding:UTF-8-*
 
-class joueur() :
+class Joueur :
 
-	def __init__(nom) :
+	def __init__(self,nom) :
 
 		self._nom = nom
-		self._nb_partie = 1
+		self._nb_partie = 0
 		self._score = 0
 
 	def afficher_joueur(self) :
@@ -18,7 +18,7 @@ class joueur() :
 
 		self._nb_partie += 1
 
-	def inc_score(sel,nb) :
+	def inc_score(self,nb) :
 		""" Cette fonction incrémente le score du joueur"""
 
-		self._scores += nb
+		self._score += nb

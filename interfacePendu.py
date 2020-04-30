@@ -17,6 +17,7 @@ class Interface(Frame) :
 		self.mot_a_trouver = str()
 		self.win = False # initialisation conditions début de partie
 		self.nb_vie = donnees.nb_essai 
+		self.nom_joueur = str()
 
 		Frame.__init__(self, fenetre, width=1350, height = 600,**kwargs)
 		self.pack(fill=BOTH)
@@ -31,12 +32,12 @@ class Interface(Frame) :
 		self.bouton_scores = Button(self, text = "Scores", command = self.afficher_scores) # reste a definir la fonction
 		self.bouton_scores.pack(side = "top",pady = 10) # Bouton pour accerder au scores
 
-		self.fenetre_scores = Frame(fenetre, width =  650, height = 350)
+		self.fenetre_scores = Frame(self, width =  650, height = 350)
 
 		self.bouton_regles = Button(self, text = "Règles", command = self.afficher_regles) # reste a definir la fonction
 		self.bouton_regles.pack(side = "left",padx = 10) # Bouton pour accerder au scores
 
-		self.fenetre_regles = Frame(fenetre, width = 650, height = 350)
+		self.fenetre_regles = Frame(self, width = 650, height = 350)
 		self.regles = Label(self.fenetre_regles, text = donnees.regles )
 		
 		self.bouton_revenir_regles = Button(self.fenetre_regles, text= "Revenir au jeu", command = self.afficher_jeu)
@@ -51,6 +52,11 @@ class Interface(Frame) :
 		self.frame_jeu = Frame(self, width=15, height = 25)
 
 		self.nb_essai = Label(self, text = "")
+
+		self.joueur = StringVar() # case de proposition 
+		self.entry_joueur = Entry(self.frame_jeu, textvariable = self.joueur, width = 15, bg = 'white')
+
+		self.message_nom = Label(self.frame_jeu,text = "Veuillez renseigner votre nom")
 
 		self.lettre = StringVar() # case de proposition 
 		self.proposition = Entry(self.frame_jeu, textvariable = self.lettre, width = 15, bg = 'white')
@@ -85,7 +91,6 @@ class Interface(Frame) :
 			self.liste_place[place].pack(side = 'left')
 			
 		
-
 
 	def get_prop(self):
 		""" Renvoie la lettre de l' Entry proposition ssi proposition est un seule lettre
@@ -152,15 +157,46 @@ class Interface(Frame) :
 		"""Cette fonction génére le mot a trouver a partir du fichier donnees.py"""
 
 		self.mot_a_trouver = fonctions.gen_mot()
+		taille = len(self.mot_a_trouver)
+		self.set_entry_joueur()
+		
+		
+
+	def set_entry_joueur(self) :
+
+		self.changement_frame(quitter = False)
+		self.frame_jeu.pack(side = "top",pady = 10)
+		
+		self.message_nom.pack(side="top",pady = 15)
+		self.entry_joueur.pack(side = "top", pady = 15)
+		self.entry_joueur.bind("<Return>",self.command_return)
+
+	def command_return(self,*args) :
+
+		self.get_nom()
+		self.message_nom.pack_forget()
+		self.entry_joueur.pack_forget()
 		self.espace_lettre(len(self.mot_a_trouver))
 
+
+	def get_nom(self):
+
+		self.nom_joueur = self.entry_joueur.get()
+		if not fonctions.verif_joueur(self.nom_joueur) :
+			fonctions.creer_joueur(self.nom_joueur)
+		
+
+
+
 	def victoire(self) :
+		fonctions.sauve_score(self.nom_joueur,self.nb_vie)
 		self.frame_jeu.pack_forget()
 		self.label_victoire.pack(pady = 10)
 		self.bouton_scores.pack(side='top',pady = 10)
 		self.bouton_rejouer.pack(side='top',pady = 10)
 
 	def defaite(self):
+		fonctions.sauve_score(self.nom_joueur,self.nb_vie)
 		self.frame_jeu.pack_forget()
 		self.label_defaite.pack()
 
@@ -174,6 +210,7 @@ class Interface(Frame) :
 		
 		self.bouton_revenir_regles.pack(side = 'top')
 
+
 	def afficher_scores(self):
 		"""Génére la frame des scores"""
 
@@ -186,9 +223,10 @@ class Interface(Frame) :
 			joueur_none = Label(self.fenetre_scores, text = "Aucun joueur enregistrer")
 			joueur_none.pack(side = "top", pady = 50)
 		else :
-			for score_joueur in dico_scores.keys() : # creation d'un label par joueur 
-				score_joueur = Label(self.fenetre_scores, text = score_joueur.afficher_joueur())
-				score_joueur.pack(side = "top", pady = 15)
+			for score_joueur in dico_scores.keys() : # creation d'un label par joueur
+				score_joueur = dico_scores[score_joueur] 
+				ligne = Label(self.fenetre_scores, text = score_joueur.afficher_joueur())
+				ligne.pack(side = "top", pady = 15)
 
 		self.bouton_revenir_scores.pack(side = 'top') # bouton permettant de revenir a l'écran titre
 

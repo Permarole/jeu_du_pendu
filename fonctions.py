@@ -15,7 +15,7 @@ def verif_joueur(nom_joueur) :
 	with open("scores","rb") as fichier_verif :
 		depickler = pickle.Unpickler(fichier_verif) # récupération des objets présent dans le fichier
 		dico_scores = depickler.load() # lecture des objets et recuperation des scores
-		for nom in dico_scores.key() : # parcourt du dictionnaire pour verifier l'existance du joueur
+		for nom in dico_scores.keys() : # parcourt du dictionnaire pour verifier l'existance du joueur
 			if nom == nom_joueur : # le joueur existe si son nom est présent dans les scores
 				return True	
 	return False
@@ -37,9 +37,8 @@ def creer_joueur(nom_joueur) :
 	dico_scores = get_dico_scores()
 
 	with open("scores","wb") as fichier_crea :
-			print("\nUn nouveau joueur ! Vous démarrez le jeu avec un score de 0. Chaque victoire fera augmenter ce score, bonne chance !\n")
 			new_entry = pickle.Pickler(fichier_crea)
-			dico_scores[nom_joueur] = joueur(nom_joueur) # ajout du joueur à la bibliothéque
+			dico_scores[nom_joueur] = joueur.Joueur(nom_joueur) # ajout du joueur à la bibliothéque
 			new_entry.dump(dico_scores) # sauvegarde de l'objet
 			
 			
@@ -74,12 +73,14 @@ def sauve_score(nom_joueur,vie_restante = 0) :
 	dico_scores = get_dico_scores()
 	with open("scores","wb") as fichier_sauv : 
 		sauv_score = pickle.Pickler(fichier_sauv)		#serialisation des données
-		dico_scores[nom_joueur].inc_score(vie_restante) # modification des données
+		dico_scores[nom_joueur].inc_score(vie_restante)
+		dico_scores[nom_joueur].inc_nb_partie() # modification des données
 		sauv_score.dump(dico_scores) # réenregistrement des données
 		
 
 
-	
+
+
 
 
 
