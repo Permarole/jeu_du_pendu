@@ -85,7 +85,7 @@ class Interface(Frame) :
 		
 		self.nb_essai["text"] = "Vous disposez de {} vies".format(self.nb_vie) # Affiche le nombre de vie restante (valeur par default dans donnes.py)
 		self.proposition.pack(side = 'top', pady = 10)
-		self.bouton_envoyer.pack(side = 'bottom',pady = 20)	
+		self.proposition.bind("<Return>", self.get_prop)
 
 		self.liste_place =list() # reset de la liste_place en cas de nouvelle partie
 
@@ -97,7 +97,7 @@ class Interface(Frame) :
 			
 		
 
-	def get_prop(self):
+	def get_prop(self,*args):
 		""" Renvoie la lettre de l' Entry proposition ssi proposition est un seule lettre
 		renvoie 0 sinon """
 
@@ -203,9 +203,10 @@ class Interface(Frame) :
 		else :
 			self.label_defaite.pack()
 		self.bouton_rejouer.pack(side='top',pady = 10)
+		self.bouton_quitter.pack(side = "bottom",pady = 40)
 		self.bouton_scores.pack(side='left',pady = 10,padx = 20)
 		self.bouton_changer_joueur.pack(side = 'right',pady = 10,padx = 20)
-		self.bouton_quitter.pack(side = "top",pady = 40)
+		
 		
 
 	def afficher_regles(self):
