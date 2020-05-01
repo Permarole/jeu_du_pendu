@@ -102,7 +102,7 @@ class Interface(Frame) :
 		ou si le mot complet est proposé
 		supprime la proposition si elle ne rentre dans aucun des cas cités  """
 
-		prop = self.proposition.get()
+		prop = self.proposition.get().upper()
 		if (len(prop) == 1 or len(prop) == len(self.mot_a_trouver) )and prop.isalpha() :
 			self.verif_prop(prop)
 			
@@ -168,7 +168,7 @@ class Interface(Frame) :
 	def set_mot(self) :
 		"""Cette fonction génére le mot a trouver a partir du fichier donnees.py"""
 
-		self.mot_a_trouver = fonctions.gen_mot()
+		self.mot_a_trouver = fonctions.gen_mot().upper()
 		taille = len(self.mot_a_trouver)
 		self.espace_lettre(taille)
 
