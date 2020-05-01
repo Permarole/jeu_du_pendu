@@ -64,9 +64,9 @@ class Interface(Frame) :
 		
 		self.bouton_envoyer = Button(self, text = "Envoyer", command = self.get_prop)
 
-		self.label_victoire = Label(self, text = "C'est gagné !")
+		self.label_victoire = Label(self)
 
-		self.label_defaite = Label(self, text = "C'est perdu !")
+		self.label_defaite = Label(self)
 
 		self.liste_place = list() #  Liste des cases de lettres
 
@@ -98,12 +98,13 @@ class Interface(Frame) :
 		
 
 	def get_prop(self,*args):
-		""" Renvoie la lettre de l' Entry proposition ssi proposition est un seule lettre
-		renvoie 0 sinon """
+		""" Appel la verif_prop de l' Entry proposition si proposition est un seule lettre
+		ou si le mot complet est proposé
+		supprime la proposition si elle ne rentre dans aucun des cas cités  """
 
-		lettre = self.proposition.get()
-		if len(lettre) == 1 and lettre.isalpha() :
-			self.verif_lettre(lettre,self.mot_a_trouver)
+		prop = self.proposition.get()
+		if (len(prop) == 1 or len(prop) == len(self.mot_a_trouver) )and prop.isalpha() :
+			self.verif_prop(prop)
 			
 		else :
 			self.proposition.delete(0,"end")
@@ -115,10 +116,16 @@ class Interface(Frame) :
 		self.nb_essai["text"] = "Vous disposez de {} vie(s)".format(self.nb_vie)
 
 
-	def ajout_lettre(self,lettre,places):
+	def ajout_lettre(self,prop,places):
 		"""Ajoute la lettre aux place designées"""
-		for i in places :
-			self.liste_place[i]["text"] = lettre
+		if not places : # liste vide évaluée a False
+			for i in range(len(self.mot_a_trouver)) :
+				self.liste_place[i]["text"] = prop[i]
+			
+		else :
+			for i in places :
+				self.liste_place[i]["text"] = prop
+
 
 	def verif_victoire(self,taille):
 		""" Cette fonction appelle la fonction fin de partie si une des deux conditions d'arret de jeu est remplie"""
@@ -133,23 +140,29 @@ class Interface(Frame) :
 
 
 
-	def verif_lettre(self,proposition,mot) :
+	def verif_prop(self,proposition) :
 		"""Cette fonction vérifie si la lettre est présente dans le mot.
 		 Si tel est le cas elle incrémente une liste par la pace de cette lettre dans le mot
 		 SI cette liste se retrouve non vide à la fin de la vérification on appelle la fonction ajout_lettre
 		 Si la liste est vide c'est la lettre n'est pas présente dans le mot on retire alors une vie au joueur """
 		liste_place = list()
 		i = 0
-		for lettre in mot:
-			if lettre == proposition :
-				liste_place.append(i)
-			i +=1
-		if len(liste_place) > 0 :  
-			self.ajout_lettre(proposition, liste_place)
+		if len(proposition) == 1 :
+			for lettre in self.mot_a_trouver:
+				if lettre == proposition :
+					liste_place.append(i)
+				i +=1
+			if len(liste_place) > 0 :  
+				self.ajout_lettre(proposition, liste_place)
+			else :
+				self.vie_perdue()
+		elif proposition == self.mot_a_trouver :
+				self.ajout_lettre(proposition, liste_place)
+
 		else :
 			
 			self.vie_perdue()
-		self.verif_victoire(len(mot))
+		self.verif_victoire(len(self.mot_a_trouver))
 		self.proposition.delete(0,"end")
 		
 	def set_mot(self) :
@@ -158,6 +171,9 @@ class Interface(Frame) :
 		self.mot_a_trouver = fonctions.gen_mot()
 		taille = len(self.mot_a_trouver)
 		self.espace_lettre(taille)
+
+		self.label_victoire["text"] = "C'est gagné ! Le mot à trouvé etait {} !".format(self.mot_a_trouver)
+		self.label_defaite["text"] = "Dommage vous n'avez plus de vie !\nLe mot à trouvé etait {} !".format(self.mot_a_trouver)
 		
 		
 
@@ -175,6 +191,7 @@ class Interface(Frame) :
 		"""Cette fonction appelle get_nom pour creer le joueur ou incrémenter son nombre de partie
 		Elle appelle ensuite la fonction set_mot pour passer à la suite du jeu"""
 
+		self.entry_joueur.unbind("<Return>") # L'unbind evite de rappeler command_return si on rappuit sur entrée
 		self.get_nom()
 		self.message_nom.pack_forget()
 		self.entry_joueur.pack_forget()
@@ -194,6 +211,7 @@ class Interface(Frame) :
 		"""Cette affiche la frame de fin de partie avec possibilité de rejouer d'avoir acces au scores ou de changer d'utilisateur
 		On sauvegarde aussi les stats du joueur sur la partie"""
 		self.changement_frame()
+		self.proposition.unbind("<Return>")
 		fonctions.sauve_score(self.nom_joueur,self.nb_vie)
 		self.frame_jeu.pack_forget()
 		if win : 
