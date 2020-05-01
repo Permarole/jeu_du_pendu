@@ -16,7 +16,7 @@ class Interface(Frame) :
 
 		self.mot_a_trouver = str()
 		self.win = False # initialisation conditions début de partie
-		self.nb_vie = donnees.nb_essai 
+		self.nb_vie = int()
 		self.nom_joueur = str()
 
 		Frame.__init__(self, fenetre, width=1350, height = 600,**kwargs)
@@ -26,7 +26,7 @@ class Interface(Frame) :
 		self.titre.pack(pady = 25)
 
 
-		self.bouton_play = Button(self, text = "JOUER", fg = 'green', command = self.set_mot)
+		self.bouton_play = Button(self, text = "JOUER", fg = 'green', command = self.set_entry_joueur)
 		self.bouton_play.pack(side = "top",pady = 10) # Bouton jouer
 
 		self.bouton_scores = Button(self, text = "Scores", command = self.afficher_scores) # reste a definir la fonction
@@ -44,6 +44,7 @@ class Interface(Frame) :
 		self.bouton_revenir_scores = Button(self.fenetre_scores, text= "Revenir au jeu", command = self.afficher_jeu)
 
 		self.bouton_rejouer = Button(self, text = "Rejouer", command = self.set_mot)
+		self.bouton_changer_joueur = Button(self,text = "Changer Joueur", command = self.set_entry_joueur)
 
 		
 		self.bouton_quitter = Button(self, text= "Quitter", command = self.quit)
@@ -75,20 +76,24 @@ class Interface(Frame) :
 	def espace_lettre(self,nb_lettre):
 		""" Creer les cases des lettres à trouver affiche l'espace proposition et le boutton envoyer """
 
-		self.changement_frame(quitter = False)
+		self.changement_frame()
+
+		self.nb_vie = donnees.nb_essai # on reinitialise le nb de vie en cas de nouvelle partie
 
 		self.nb_essai.pack(side="top")
 		self.frame_jeu.pack(side = "top",pady = 10)
 		
 		self.nb_essai["text"] = "Vous disposez de {} vies".format(self.nb_vie) # Affiche le nombre de vie restante (valeur par default dans donnes.py)
-		self.proposition.pack(side = 'top')
+		self.proposition.pack(side = 'top', pady = 10)
 		self.bouton_envoyer.pack(side = 'bottom',pady = 20)	
 
-		
+		self.liste_place =list() # reset de la liste_place en cas de nouvelle partie
+
 		for place in range(nb_lettre) :
 			case = Label(self.frame_jeu, text ='_', padx = 15, bg = 'white')
 			self.liste_place.append(case)
-			self.liste_place[place].pack(side = 'left')
+			self.liste_place[place].pack(side = 'left',pady = 40)
+		self.bouton_quitter.pack(side = "top",pady = 10)
 			
 		
 
@@ -116,18 +121,17 @@ class Interface(Frame) :
 			self.liste_place[i]["text"] = lettre
 
 	def verif_victoire(self,taille):
-		""" Cette fonction renvoie True si le mot est complet"""
+		""" Cette fonction appelle la fonction fin de partie si une des deux conditions d'arret de jeu est remplie"""
 		win = True
 		for i in range(taille) :
 			if self.liste_place[i]["text"] == "_" :
 				win = False
 		if win :	
-			self.victoire()
+			self.fin_de_partie() 
+		elif self.nb_vie == 0 :
+			self.fin_de_partie(win = False)
 
-	def verif_defaite(self):
-		"""Cette fonction verifie qu'il reste au moins une vie au joueur"""
-		if self.nb_vie == 0 :
-			self.defaite()
+
 
 	def verif_lettre(self,proposition,mot) :
 		"""Cette fonction vérifie si la lettre est présente dans le mot.
@@ -146,40 +150,39 @@ class Interface(Frame) :
 			
 			self.vie_perdue()
 		self.verif_victoire(len(mot))
-		self.verif_defaite()
 		self.proposition.delete(0,"end")
 		
-	def reset_entry(self):
-		""" Cette fonction reset self.proposition """
-		self.proposition.delete(0,"end")
-
 	def set_mot(self) :
 		"""Cette fonction génére le mot a trouver a partir du fichier donnees.py"""
 
 		self.mot_a_trouver = fonctions.gen_mot()
 		taille = len(self.mot_a_trouver)
-		self.set_entry_joueur()
+		self.espace_lettre(taille)
 		
 		
 
 	def set_entry_joueur(self) :
+		""" Cette fonction génére la frame permettant de renseigner le joueur""" 
 
-		self.changement_frame(quitter = False)
+		self.changement_frame()
 		self.frame_jeu.pack(side = "top",pady = 10)
 		
 		self.message_nom.pack(side="top",pady = 15)
 		self.entry_joueur.pack(side = "top", pady = 15)
-		self.entry_joueur.bind("<Return>",self.command_return)
+		self.entry_joueur.bind("<Return>",self.command_return) # defini le comportement de la touche entrée dans l'espace entry
 
 	def command_return(self,*args) :
+		"""Cette fonction appelle get_nom pour creer le joueur ou incrémenter son nombre de partie
+		Elle appelle ensuite la fonction set_mot pour passer à la suite du jeu"""
 
 		self.get_nom()
 		self.message_nom.pack_forget()
 		self.entry_joueur.pack_forget()
-		self.espace_lettre(len(self.mot_a_trouver))
+		self.set_mot()
 
 
 	def get_nom(self):
+		"""Cette fonction actualise/crée le joueur dans le fichier score""" 
 
 		self.nom_joueur = self.entry_joueur.get()
 		if not fonctions.verif_joueur(self.nom_joueur) :
@@ -187,18 +190,23 @@ class Interface(Frame) :
 		
 
 
-
-	def victoire(self) :
+	def fin_de_partie(self, win = True ) :
+		"""Cette affiche la frame de fin de partie avec possibilité de rejouer d'avoir acces au scores ou de changer d'utilisateur
+		On sauvegarde aussi les stats du joueur sur la partie"""
+		self.changement_frame()
 		fonctions.sauve_score(self.nom_joueur,self.nb_vie)
 		self.frame_jeu.pack_forget()
-		self.label_victoire.pack(pady = 10)
-		self.bouton_scores.pack(side='top',pady = 10)
+		if win : 
+			
+			self.nb_essai["text"] = "Félicitation ! Vous avez trouvé le mot et marquez : {} point(s)".format(self.nb_vie)
+			self.label_victoire.pack(pady = 10)
+		else :
+			self.label_defaite.pack()
 		self.bouton_rejouer.pack(side='top',pady = 10)
-
-	def defaite(self):
-		fonctions.sauve_score(self.nom_joueur,self.nb_vie)
-		self.frame_jeu.pack_forget()
-		self.label_defaite.pack()
+		self.bouton_scores.pack(side='left',pady = 10,padx = 20)
+		self.bouton_changer_joueur.pack(side = 'right',pady = 10,padx = 20)
+		self.bouton_quitter.pack(side = "top",pady = 40)
+		
 
 	def afficher_regles(self):
 		"""Génére la frame des regles du pendu"""
@@ -231,37 +239,29 @@ class Interface(Frame) :
 		self.bouton_revenir_scores.pack(side = 'top') # bouton permettant de revenir a l'écran titre
 
 
-	def changement_frame(self,quitter = True):
+	def changement_frame(self):
 		""""Cette fonction 'nettoie' la frame pour un nouvel affichage """
 
-		self.bouton_play.pack_forget()
-		self.bouton_regles.pack_forget()
-		self.bouton_scores.pack_forget()
-		if quitter :
-			self.bouton_quitter.pack_forget()
-		else :
-			self.bouton_quitter.pack(side = "bottom")
+		for widget in self.fenetre_scores.winfo_children() :
+			widget.pack_forget()
+
+		for widget in self.fenetre_regles.winfo_children() :
+			widget.pack_forget()
+
+		for widget in self.frame_jeu.winfo_children() :
+			widget.pack_forget()
+
+		for widget in self.winfo_children() :
+			if widget != self.titre :
+				widget.pack_forget()
 
 		
 	def afficher_jeu(self):
-		"""Nettoie la frame courante et réaffiche la frame de jeu
-		On attend en argument 1 ou 0
-		1 : on nettoie la frame regles
-		0 : on nettoie la frame scores """
 
-		self.titre["text"] = "LE\nPENDU"
-
-		# if int == 1 :
-			
-		self.fenetre_regles.pack_forget()
-		self.fenetre_scores.pack_forget()
-
-		# elif int == 0 :
-
-		# 	self.fenetre_scors.pack_forget()
+		self.changement_frame()
+		self.titre["text"] = "LE\nPENDU"			
 		self.bouton_play.pack(side='top',pady = 10)
 		self.bouton_scores.pack(side='top',pady = 10)
 		self.bouton_regles.pack(side='left',pady = 10)	
 		self.bouton_quitter.pack(side = "right",pady = 10)
 
-	# def reset_espace_lettre(self,nb_lettre) :
