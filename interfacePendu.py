@@ -85,6 +85,7 @@ class Interface(Frame) :
 		
 		self.nb_essai["text"] = "Vous disposez de {} vies".format(self.nb_vie) # Affiche le nombre de vie restante (valeur par default dans donnes.py)
 		self.proposition.pack(side = 'top', pady = 10)
+		self.proposition.focus_set()
 		self.proposition.bind("<Return>", self.get_prop)
 
 		self.liste_place =list() # reset de la liste_place en cas de nouvelle partie
@@ -185,6 +186,7 @@ class Interface(Frame) :
 		
 		self.message_nom.pack(side="top",pady = 15)
 		self.entry_joueur.pack(side = "top", pady = 15)
+		self.entry_joueur.focus_set()
 		self.entry_joueur.bind("<Return>",self.command_return) # defini le comportement de la touche entrée dans l'espace entry
 
 	def command_return(self,*args) :
