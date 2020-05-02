@@ -1,7 +1,7 @@
 #-*-coding:UTF-8-*
 from tkinter import *
 import donnees
-import fonctions
+import jeu
 
 
 
@@ -14,10 +14,8 @@ class Interface(Frame) :
 	def __init__(self,fenetre,**kwargs):
 		""" On crée une fenêtre ayant pour attributs les widgets nécessaire au jeu """
 
-		self.mot_a_trouver = str()
-		self.win = False # initialisation conditions début de partie
-		self.nb_vie = int()
-		self.nom_joueur = str()
+		self.jeu = jeu.Jeu()
+		self.liste_case = list() #  Liste des cases de lettres
 
 		Frame.__init__(self, fenetre, width=1350, height = 600,**kwargs)
 		self.pack(fill=BOTH)
@@ -26,7 +24,7 @@ class Interface(Frame) :
 		self.titre.pack(pady = 25)
 
 
-		self.bouton_play = Button(self, text = "JOUER", fg = 'green', command = self.set_entry_joueur)
+		self.bouton_play = Button(self, text = "JOUER", fg = 'green', command = self.play)
 		self.bouton_play.pack(side = "top",pady = 10) # Bouton jouer
 
 		self.bouton_scores = Button(self, text = "Scores", command = self.afficher_scores) # reste a definir la fonction
@@ -43,7 +41,7 @@ class Interface(Frame) :
 		self.bouton_revenir_regles = Button(self.fenetre_regles, text= "Revenir au jeu", command = self.afficher_jeu)
 		self.bouton_revenir_scores = Button(self.fenetre_scores, text= "Revenir au jeu", command = self.afficher_jeu)
 
-		self.bouton_rejouer = Button(self, text = "Rejouer", command = self.set_mot)
+		self.bouton_rejouer = Button(self, text = "Rejouer", command = self.play)
 		self.bouton_changer_joueur = Button(self,text = "Changer Joueur", command = self.set_entry_joueur)
 
 		
@@ -52,7 +50,7 @@ class Interface(Frame) :
 
 		self.frame_jeu = Frame(self, width=15, height = 25)
 
-		self.nb_essai = Label(self, text = "")
+		self.essais_restant = Label(self, text = "")
 
 		self.joueur = StringVar() # case de proposition 
 		self.entry_joueur = Entry(self.frame_jeu, textvariable = self.joueur, width = 15, bg = 'white')
@@ -68,114 +66,21 @@ class Interface(Frame) :
 
 		self.label_defaite = Label(self)
 
-		self.liste_place = list() #  Liste des cases de lettres
 
-		self.lettre = "0" # initialisation de la proposition
+	def play(self) :
+		""" Fonction gérant l'initialisation du jeu """
 
+		self.jeu.creer_scores() # On crée le fichier scores s'il n'existe pas
+		self.jeu.gen_mot() # Genere le mot à trouver
+		self.set_entry_joueur() # Genere la frame permettant de renseigner le nom du joueur
+		if not self.jeu.verif_joueur() : # Verifie si le joueur existe
+			self.jeu.creer_joueur() # Créé le jeu dans le cas ou il n'existe pas
 
-	def espace_lettre(self,nb_lettre):
-		""" Creer les cases des lettres à trouver affiche l'espace proposition et le boutton envoyer """
-
-		self.changement_frame()
-
-		self.nb_vie = donnees.nb_essai # on reinitialise le nb de vie en cas de nouvelle partie
-
-		self.nb_essai.pack(side="top")
-		self.frame_jeu.pack(side = "top",pady = 10)
-		
-		self.nb_essai["text"] = "Vous disposez de {} vies".format(self.nb_vie) # Affiche le nombre de vie restante (valeur par default dans donnes.py)
-		self.proposition.pack(side = 'top', pady = 10)
-		self.proposition.focus_set()
-		self.proposition.bind("<Return>", self.get_prop)
-
-		self.liste_place =list() # reset de la liste_place en cas de nouvelle partie
-
-		for place in range(nb_lettre) :
-			case = Label(self.frame_jeu, text ='_', padx = 15, bg = 'white')
-			self.liste_place.append(case)
-			self.liste_place[place].pack(side = 'left',pady = 40)
-		self.bouton_quitter.pack(side = "top",pady = 10)
-			
-		
-
-	def get_prop(self,*args):
-		""" Appel la verif_prop de l' Entry proposition si proposition est un seule lettre
-		ou si le mot complet est proposé
-		supprime la proposition si elle ne rentre dans aucun des cas cités  """
-
-		prop = self.proposition.get().upper()
-		if (len(prop) == 1 or len(prop) == len(self.mot_a_trouver) )and prop.isalpha() :
-			self.verif_prop(prop)
-			
-		else :
-			self.proposition.delete(0,"end")
-
-
-	def vie_perdue(self):
-		""" Actualise nb_vie """
-		self.nb_vie -= 1
-		self.nb_essai["text"] = "Vous disposez de {} vie(s)".format(self.nb_vie)
-
-
-	def ajout_lettre(self,prop,places):
-		"""Ajoute la lettre aux place designées"""
-		if not places : # liste vide évaluée a False
-			for i in range(len(self.mot_a_trouver)) :
-				self.liste_place[i]["text"] = prop[i]
-			
-		else :
-			for i in places :
-				self.liste_place[i]["text"] = prop
-
-
-	def verif_victoire(self,taille):
-		""" Cette fonction appelle la fonction fin de partie si une des deux conditions d'arret de jeu est remplie"""
-		win = True
-		for i in range(taille) :
-			if self.liste_place[i]["text"] == "_" :
-				win = False
-		if win :	
-			self.fin_de_partie() 
-		elif self.nb_vie == 0 :
-			self.fin_de_partie(win = False)
-
-
-
-	def verif_prop(self,proposition) :
-		"""Cette fonction vérifie si la lettre est présente dans le mot.
-		 Si tel est le cas elle incrémente une liste par la pace de cette lettre dans le mot
-		 SI cette liste se retrouve non vide à la fin de la vérification on appelle la fonction ajout_lettre
-		 Si la liste est vide c'est la lettre n'est pas présente dans le mot on retire alors une vie au joueur """
-		liste_place = list()
-		i = 0
-		if len(proposition) == 1 :
-			for lettre in self.mot_a_trouver:
-				if lettre == proposition :
-					liste_place.append(i)
-				i +=1
-			if len(liste_place) > 0 :  
-				self.ajout_lettre(proposition, liste_place)
-			else :
-				self.vie_perdue()
-		elif proposition == self.mot_a_trouver :
-				self.ajout_lettre(proposition, liste_place)
-
-		else :
-			
-			self.vie_perdue()
-		self.verif_victoire(len(self.mot_a_trouver))
-		self.proposition.delete(0,"end")
-		
-	def set_mot(self) :
-		"""Cette fonction génére le mot a trouver a partir du fichier donnees.py"""
-
-		self.mot_a_trouver = fonctions.gen_mot().upper()
-		taille = len(self.mot_a_trouver)
-		self.espace_lettre(taille)
-
-		self.label_victoire["text"] = "C'est gagné ! Le mot à trouvé etait {} !".format(self.mot_a_trouver)
-		self.label_defaite["text"] = "Dommage vous n'avez plus de vie !\nLe mot à trouvé etait {} !".format(self.mot_a_trouver)
-		
+		# self.set_espace_lettre() Cette fonction est appelé dans command return elle lance la seconde partie du programme à savoir le jeu a proprement parler
+		# Dans set_epsace_lettre la touche return est bind sur la fonction process_lettre
+		# Cette fonction récupère l'entrée faite par le joueur puis la teste 
+		# Suivant la prop on ajoute une lettre ou le joueur perd un vie
+		# On teste alors les conditions d'arret du jeu et appelle fin_de_partie si une des conditions est remplie 
 		
 
 	def set_entry_joueur(self) :
@@ -183,7 +88,6 @@ class Interface(Frame) :
 
 		self.changement_frame()
 		self.frame_jeu.pack(side = "top",pady = 10)
-		
 		self.message_nom.pack(side="top",pady = 15)
 		self.entry_joueur.pack(side = "top", pady = 15)
 		self.entry_joueur.focus_set()
@@ -197,30 +101,80 @@ class Interface(Frame) :
 		self.get_nom()
 		self.message_nom.pack_forget()
 		self.entry_joueur.pack_forget()
-		self.set_mot()
+		self.set_espace_lettre()		
 
 
-	def get_nom(self):
-		"""Cette fonction actualise/crée le joueur dans le fichier score""" 
+	def set_espace_lettre(self):
+		""" Creer les cases des lettres à trouver et affiche l'espace proposition """
 
-		self.nom_joueur = self.entry_joueur.get()
-		if not fonctions.verif_joueur(self.nom_joueur) :
-			fonctions.creer_joueur(self.nom_joueur)
+		self.changement_frame()
+		self.essais_restant.pack(side="top")
+		self.frame_jeu.pack(side = "top",pady = 10)
+		self.update_vie()# Affiche le nombre de vie restante (valeur par default dans donnes.py)
+		self.proposition.pack(side = 'top', pady = 10)
+		self.proposition.focus_set()
+		self.proposition.bind("<Return>", self.process_prop) # appel de get_prop en cas de <return>
+		self.liste_case =list() # reset de la liste_case en cas de nouvelle partie
+		for place in range(self.jeu.len_mot()) :
+			case = Label(self.frame_jeu, text ='_', padx = 15, bg = 'white')
+			self.liste_case.append(case)
+			self.liste_case[place].pack(side = 'left',pady = 40)
+		self.bouton_quitter.pack(side = "top",pady = 10)
+			
 		
 
+	def get_prop(self):
+		""" Appel la verif_prop de l' Entry proposition si proposition est un seule lettre
+		ou si le mot complet est proposé
+		supprime la proposition si elle ne rentre dans aucun des cas cités  """
 
-	def fin_de_partie(self, win = True ) :
+		prop = self.proposition.get().upper()
+		if (len(prop) == 1 or len(prop) == self.jeu.len_mot()) and prop.isalpha() :
+			self.proposition.delete(0,"end")
+			return prop, self.jeu.verif_prop(prop)		
+		else :
+			self.proposition.delete(0,"end")
+			return False
+
+	def process_prop(self,*args) :
+		"""Cette fonction se charge de récuperer la proposition du joueur et de la traiter en conséquence"""
+
+		tuple_prop_liste = self.get_prop()
+		if tuple_prop_liste is not False :
+			if not tuple_prop_liste[1] : # liste vide le joueur perd une vie
+				self.jeu.perdre_vie() 
+				self.update_vie()
+			elif tuple_prop_liste[1][0] == self.jeu.len_mot() : # liste[0] == taille du mot : victoire
+				self.fin_de_partie(True)
+			else : # ajout de la lettre au mot
+				self.ajout_lettre(tuple_prop_liste)
+
+			if self.jeu.verif_victoire() : # verification de victoire ou defaite
+				self.fin_de_partie(True)
+			elif self.jeu.get_nb_vie() == 0 :
+				self.fin_de_partie(False)
+
+
+
+	def ajout_lettre(self,prop):
+		"""Ajoute la lettre aux place designées"""
+	
+		for i in prop[1] : # prop est un tuple contenant la lettre proposée en indice 1 et une liste de place en indice 0  
+			self.liste_case[i]["text"] = prop[0]
+
+
+	def fin_de_partie(self, win) :
 		"""Cette affiche la frame de fin de partie avec possibilité de rejouer d'avoir acces au scores ou de changer d'utilisateur
 		On sauvegarde aussi les stats du joueur sur la partie"""
 		self.changement_frame()
 		self.proposition.unbind("<Return>")
-		fonctions.sauve_score(self.nom_joueur,self.nb_vie)
+		self.jeu.sauve_score()
 		self.frame_jeu.pack_forget()
 		if win : 
-			
-			self.nb_essai["text"] = "Félicitation ! Vous avez trouvé le mot et marquez : {} point(s)".format(self.nb_vie)
+			self.label_victoire["text"] = "FÉLICITATIONS !\nLe mot était '{}'.\nVous marquez {} point(s) !".format(self.jeu.get_mot().upper(),self.jeu.get_nb_vie())
 			self.label_victoire.pack(pady = 10)
 		else :
+			self.label_defaite["text"] = "DOMMAGE c'est perdu !\nLe mot était '{}'.\n".format(self.jeu.get_mot().upper(),self.jeu.get_nb_vie())
 			self.label_defaite.pack()
 		self.bouton_rejouer.pack(side='top',pady = 10)
 		self.bouton_quitter.pack(side = "bottom",pady = 40)
@@ -243,11 +197,11 @@ class Interface(Frame) :
 	def afficher_scores(self):
 		"""Génére la frame des scores"""
 
-		fonctions.creer_scores() # on verifie l'existance du ficier score et on le creer s'il n'existe pas
+		self.jeu.creer_scores() # on verifie l'existance du ficier score et on le creer s'il n'existe pas
 		self.changement_frame() # nettoyage de la frame
 		self.fenetre_scores.pack(side = "top")
 		self.titre["text"] = "LES SCORES"
-		dico_scores = fonctions.get_dico_scores()
+		dico_scores = self.jeu.get_dico_scores()
 		if not dico_scores : # on verifie si le dictionnaire est vide dict vide évaluer à False en python 
 			joueur_none = Label(self.fenetre_scores, text = "Aucun joueur enregistrer")
 			joueur_none.pack(side = "top", pady = 50)
@@ -286,3 +240,11 @@ class Interface(Frame) :
 		self.bouton_regles.pack(side='left',pady = 10)	
 		self.bouton_quitter.pack(side = "right",pady = 10)
 
+	def get_nom(self):
+		"""Cette fonction actualise/crée le joueur dans le fichier score""" 
+
+		self.jeu.set_nom_joueur(self.entry_joueur.get()) 
+
+	def update_vie(self):
+		"""Actualise l'affiche de nombre de vie restante"""
+		self.essais_restant["text"] = "Vous disposez de {} vies".format(self.jeu.get_nb_vie())
